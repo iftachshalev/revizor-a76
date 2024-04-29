@@ -103,7 +103,7 @@ class ARMExecutor(Executor):
             # until we find the `done` keyword in the output
             while not reading_finished:
                 output = subprocess.check_output(
-                    f"taskset -c {CONF.executor_taskset} cat /sys/arm64_executor/trace", shell=True)
+                    f"sudo taskset -c {CONF.executor_taskset} cat /sys/arm64_executor/trace", shell=True)
                 assert False, "yaaaaa"
                 reader = csv.reader(output.decode().split("\n"))
                 for row in reader:
