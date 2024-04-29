@@ -1,0 +1,306 @@
+"""
+File: Fuzzing Configuration Options
+
+Copyright (C) Microsoft Corporation
+SPDX-License-Identifier: MIT
+"""
+import yaml
+import x86.x86_config as x86_config
+import arm64.arm64_config as arm64_config
+from typing import List, Dict
+
+
+class ConfigException(SystemExit):
+    pass
+
+
+class ConfCls:
+    config_path: str = ""
+    # ==============================================================================================
+    # Fuzzer
+    fuzzer: str = "basic"
+    """ fuzzer: type of the fuzzing algorithm """
+    enable_priming: bool = True
+    """ enable_priming: whether to check violations with priming """
+    enable_speculation_filter: bool = False
+    enable_observation_filter: bool = False
+
+    # ==============================================================================================
+    # Program Generator
+    generator: str = "random"
+    """ generator: type of the program generator """
+    instruction_set: str = "arm64"
+    """ instruction_set: ISA under test """
+    instruction_categories: List[str] = []
+    """ instruction_categories: list of instruction categories to use for generating programs """
+    instruction_blocklist: List[str] = []
+    """ instruction_blocklist: list of instruction that will NOT be used for generating programs """
+    program_generator_seed: int = 0
+    """ program_generator_seed: seed of the program generator """
+    program_size: int = 24
+    """ program_size: size of generated programs """
+    avg_mem_accesses: int = 12
+    """ avg_mem_accesses: average number of memory accesses in generated programs """
+    min_bb_per_function: int = 2
+    """ min_bb_per_function: minimal number of basic blocks per function in generated programs """
+    max_bb_per_function: int = 2
+    """ max_bb_per_function: maximum number of basic blocks per function in generated programs """
+    min_successors_per_bb: int = 1
+    """ min_bb_per_function: min. number of successors for each basic block in generated programs
+    Note 1: this config option is a *hint*; it could be ignored if the instruction set does not
+    have the necessary instructions to satisfy it, or if a certain number of successor is required
+    for correctness
+    Note 2: If min_successors_per_bb > max_successors_per_bb, the value is
+    overwritten with max_successors_per_bb """
+    max_successors_per_bb: int = 2
+    """ min_bb_per_function: min. number of successors for each basic block in generated programs
+    Note: this config option is a *hint*; it could be ignored if the instruction set does not
+    have the necessary instructions to satisfy it, or if a certain number of successor is required
+    for correctness """
+    register_blocklist: List[str] = []
+    """ register_blocklist: list of registers that will NOT be used for generating programs """
+    input_entropy_for_imm: bool = False
+    """ Applies bounds on immediate values based on the entropy parameter applied to inputs,
+    Note: this does not apply to bitmasks """
+    avoid_data_dependencies: bool = False
+    """ [DEPRECATED] avoid_data_dependencies: """
+    generate_memory_accesses_in_pairs: bool = False
+    """ [DEPRECATED] generate_memory_accesses_in_pairs: """
+    feedback_driven_generator: bool = False
+    """ [DEPRECATED] feedback_driven_generator: """
+
+    # ==============================================================================================
+    # Input Generator
+    input_generator: str = 'random'
+    """ input_generator: type of the input generator """
+    input_gen_seed: int = 10
+    """ input_gen_seed: input generation seed; will use a random seed if set to zero """
+    input_gen_entropy_bits: int = 16
+    """ input_gen_entropy_bits: entropy of the random values created by the input generator """
+    memory_access_zeroed_bits: int = 0
+    """ [DEPRECATED] memory_access_zeroed_bits: """
+    inputs_per_class: int = 2
+    """ inputs_per_class: number of inputs per input class """
+    input_main_region_size: int = 4096
+    """ input_main_region_size: """
+    input_faulty_region_size: int = 4096
+    """ input_faulty_region_size: """
+    input_register_region_size: int = 64
+    """ input_register_region_size: """
+
+    # ==============================================================================================
+    # Contract Model
+    model: str = 'unicorn'
+    """ model: """
+    contract_execution_clause: List[str] = ["seq"]
+    """ contract_execution_clause: """
+    contract_observation_clause: str = 'ct'
+    """ contract_observation_clause: """
+    model_max_nesting: int = 5
+    """ model_max_nesting: """
+    model_max_spec_window: int = 250
+    """ model_max_spec_window: """
+
+    # ==============================================================================================
+    # Executor
+    executor: str = 'default'
+    """ executor: executor type """
+    executor_mode: str = 'P+P'
+    """ executor_mode: hardware trace collection mode """
+    executor_warmups: int = 50
+    """ executor_warmups: number of warmup rounds executed before starting to collect
+    hardware traces """
+    executor_repetitions: int = 10
+    """ executor_repetitions: number of repetitions while collecting hardware traces """
+    executor_max_outliers: int = 1
+    """ executor_max_outliers: """
+    executor_taskset: int = 0
+    """ executor_taskset: id of the CPU core on which the executor is running test cases """
+    enable_ssbp_patch: bool = True
+    """ enable_ssbp_patch: enable a patch against Speculative Store Bypass (Intel-only) """
+    enable_pre_run_flush: bool = True
+    """ enable_pre_run_flush: ff enabled, the executor will do its best to flush
+    the microarchitectural state before running test cases """
+    enable_faulty_page: bool = False
+    """ enable_faulty_page: If enabled, only of the sandbox memory pages will have the accessed
+    bit set to zero, which will cause a microcode assist on the fist load/store to this page. """
+
+    # ==============================================================================================
+    # Analyser
+    analyser: str = 'equivalence-classes'
+    """ analyser: analyser type """
+    analyser_permit_subsets: bool = True
+    """ analyser_permit_subsets: if enabled, the analyser will not label hardware traces
+    as mismatching if they form a subset relation """
+
+    # ==============================================================================================
+    # Coverage
+    coverage_type: str = 'none'
+    """ coverage_type: coverage type """
+
+    # ==============================================================================================
+    # Minimizer
+    minimizer: str = 'violation'
+    """ minimizer: type of the test case minimizer """
+
+    # ==============================================================================================
+    # Output
+    multiline_output: bool = False
+    """ multiline_output: """
+    logging_modes: List[str] = ["info", "stat"]
+    """ logging_modes: """
+
+    # ==============================================================================================
+    # External programs
+    exe_objdump: str = "objdump"
+    """ exe_objdump: a path to the 'objdump' utility Revizor will use. """
+    exe_objcopy: str = "objcopy"
+    """ exe_objcopy: a path to the 'objcopy' utility Revizor will use. """
+    exe_strip: str = "strip"
+    """ exe_strip: a path to the 'strip' utility Revizor will use. """
+    exe_as: str = "as"
+    """ exe_as: a path to the 'as' utility Revizor will use. """
+    exe_cc: str = "cc"
+    """ exe_cc: a path to the 'cc' utility Revizor will use. """
+    exe_lscpu: str = "lscpu"
+    """ exe_lscpu: a path to the 'lscpu' utility Revizor will use. """
+    exe_tar: str = "tar"
+    """ exe_tar: a path to the 'tar' utility Revizor will use. """
+    exe_rm: str = "rm"
+    """ exe_rm: a path to the 'rm' utility Revizor will use. """
+    exe_mkdir: str = "mkdir"
+    """ exe_mkdir: a path to the 'mkdir' utility Revizor will use. """
+    exe_touch: str = "touch"
+    """ exe_touch: a path to the 'touch' utility Revizor will use. """
+    exe_awk: str = "awk"
+    """ exe_awk: a path to the 'awk' utility Revizor will use. """
+    exe_bash: str = "bash"
+    """ exe_bash: a path to the 'bash' utility Revizor will use. """
+    exe_modprobe: str = "modprobe"
+    """ exe_modprobe: a path to the 'modprobe' utility Revizor will use. """
+    exe_wrmsr: str = "wrmsr"
+    """ exe_wrmsr: a path to the 'wrmsr' utility Revizor will use. """
+    exe_wget: str = "wget"
+    """ exe_wget: a path to the 'wget' utility Revizor will use. """
+
+    # ==============================================================================================
+    # Internal
+    _instance = None
+    _no_generation: bool = False
+    _option_values: Dict[str, List] = {}  # set by ISA-specific config.py
+    _default_instruction_blocklist: List[str] = []
+
+    # Implementation of singleton
+    def __new__(cls, *args, **kwargs):
+        if not isinstance(cls._instance, cls):
+            cls._instance = object.__new__(cls, *args, **kwargs)
+        return cls._instance
+
+    def __setattr__(self, name, value):
+        # print(f"CONF: setting {name} to {value}")
+
+        # Sanity checks
+        if name[0] == "_":
+            raise ConfigException(f"Attempting to set an internal configuration variable {name}.")
+        if getattr(self, name, None) is None:
+            raise ConfigException(f"Unknown configuration variable {name}.\n"
+                                  f"It's likely a typo in the configuration file.")
+        if type(self.__getattribute__(name)) != type(value):
+            raise ConfigException(f"Wrong type of the configuration variable {name}.\n"
+                                  f"It's likely a typo in the configuration file.")
+        if name == "executor_max_outliers" and value > 20:
+            print(f"WARNING: Configuration: Are you sure you want to"
+                  f" ignore {self.executor_max_outliers} outliers?")
+        if name == "coverage_type" and value > "none":
+            super().__setattr__("feedback_driven_generator", "False")
+
+        # value checks
+        if self._option_values.get(name, '') != '':
+            invalid = False
+            if isinstance(value, List):
+                for v in value:
+                    if v not in self._option_values[name]:
+                        invalid = True
+                        break
+            else:
+                invalid = value not in self._option_values[name]
+            if invalid:
+                raise ConfigException(f"Unknown value '{value}' of config variable '{name}'\n"
+                                      f"Possible options: {self._option_values[name]}")
+        if (self.input_main_region_size % 4096 != 0) or \
+                (self.input_faulty_region_size % 4096 != 0):
+            raise ConfigException("Inputs must be page-aligned")
+        if self.input_gen_entropy_bits + self.memory_access_zeroed_bits > 32:
+            raise ConfigException("The sum of input_gen_entropy_bits and memory_access_zeroed_bits"
+                                  " must be less or equal to 32 bits")
+
+        # special handling
+        if name == "instruction_set":
+            super().__setattr__("instruction_set", value)
+            self.update_arch()
+            return
+
+        if name == "instruction_blocklist":
+            self._default_instruction_blocklist.extend(value)
+            return
+
+        super().__setattr__(name, value)
+
+    def update_arch(self):
+        # arch-specific config
+        if self.instruction_set == "x86-64":
+            config = x86_config
+            prefix = "x86_"
+        elif self.instruction_set == "arm64":
+            config = arm64_config
+            prefix = "arm64_"
+        else:
+            raise ConfigException(f"Unknown architecture {self.instruction_set}")
+        options = [i for i in dir(config) if i.startswith(prefix)]
+
+        for option in options:
+            values = getattr(config, option)
+            trimmed_name = option.removeprefix(prefix)
+            if trimmed_name == "option_values":
+                self.setattr_internal("_option_values", values)
+                continue
+
+            if hasattr(self, trimmed_name):
+                setattr(self, trimmed_name, values)
+            else:
+                super().__setattr__(option, values)
+
+    def setattr_internal(self, name, val):
+        """ Bypass value checks and set an internal config variable. Use with caution! """
+        super().__setattr__(name, val)
+
+    def save(self, path: str):
+        """
+        Takes in a file path and writes out the config's contents to a YAML file
+        at the given location.
+
+        :param path: The destination file path
+        """
+        fields = self.all()
+        # open the output file for writing and dump the collected fields/values
+        fp = open(path, "w")
+        yaml.dump(fields, fp)
+        fp.close()
+
+    def all(self):
+        """
+        Returns all non-internal, non-function fields from this class in a
+        dictionary.
+        """
+        fields = {}
+        for attr in dir(self):
+            value = getattr(self, attr)
+            # skip fields that are functions or internals
+            if attr.startswith("_") or callable(value):
+                continue
+            fields[attr] = value
+        return fields
+
+
+CONF = ConfCls()
+CONF.update_arch()
