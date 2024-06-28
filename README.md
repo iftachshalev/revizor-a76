@@ -1,3 +1,5 @@
+# adapted Revizor for cortex-a76
+## this repo represents my alpha project, explained below.
 ![](https://github.com/iftachshalev/revizor-a76/blob/master/imgs/1.jpg)
 ![](https://github.com/iftachshalev/revizor-a76/blob/master/imgs/2.jpg)
 ![](https://github.com/iftachshalev/revizor-a76/blob/master/imgs/3.jpg)
